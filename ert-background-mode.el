@@ -37,7 +37,7 @@
 (defvar-local ebg--current-lighter ebg--lighter
   "The current state of the lighter.")
 
-(defvar ebg-idle-delay 0.5
+(defvar ebg-idle-delay 2
   "The duration to wait for idle input before running tests.")
 
 (define-minor-mode ert-background-mode
@@ -57,20 +57,6 @@
 
 ;;; ----------------------------------------------------------------------------
 
-(defconst ebg--circles-alist
-  '((dotted . "◌")
-    (0 . "●")
-    (1 . "➊")
-    (2 . "➋")
-    (3 . "➌")
-    (4 . "➍")
-    (5 . "➎")
-    (6 . "➏")
-    (7 . "➐")
-    (8 . "➑")
-    (9 . "➒"))
-  "Circle chars used to indicate test status in mode lighter.")
-
 (defun ebg--run-tests ()
   "Run ERT in the background and update the modeline."
   (when (and (boundp 'ert-background-mode)
@@ -81,34 +67,18 @@
   (flet ((message (&rest _)))
     (ebg--set-mode-line (ebg--summarize (ert-run-tests-batch t)))))
 
-(defun ebg--number->circle (n)
-  "Return the circle corresponding with the number N."
-  (cdr (cond ((< n 0) (assoc 'dotted ebg--circles-alist))
-             ((or (= n 0) (> n 9)) (assoc 0  ebg--circles-alist))
-             (t (assoc n ebg--circles-alist)))))
-
 (defun ebg--summarize (results)
   "Select a circle corresponding to the type and number of RESULTS."
   (let ((failing (ert--stats-failed-unexpected results)))
     (cond
-     ;; Show blank circle if no tests are running.
-     ((>= 0 (length (ert--stats-tests results)))
-      (propertize
-       (ebg--number->circle -1)
-       'face
-       'ebg-warning-face))
-     ;; Show circle for number of failures.
+     ;; No tests are enabled.
+     ((>= 0 (length (ert--stats-tests results))) "…")
+     ;; Indicate number of failing tests.
      ((< 0 failing)
-      (propertize
-       (ebg--number->circle failing)
-       'face
-       'ebg-failing-face))
-     ;; Show solid circle for passing.
+      (propertize (format "%s FAILING" failing) 'face 'ebg-failing-face))
+     ;; Show OK for all passing.
      (t
-      (propertize
-       (ebg--number->circle 0)
-       'face
-       'ebg-passing-face)))))
+      (propertize "OK" 'face 'ebg-passing-face)))))
 
 (defun ebg--set-mode-line (str)
   "Update the modeline with status STR."
