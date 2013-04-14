@@ -31,11 +31,14 @@
 (defvar ebg--timer nil
   "Idle timer used to run tests.")
 
-(defvar ebg--lighter " ERT"
-  "The lighter to use for this mode.")
+(defvar ebg--lighter " [ERT …]"
+  "The default lighter to use for this mode.")
 
 (defvar-local ebg--current-lighter ebg--lighter
   "The current state of the lighter.")
+
+(defvar ebg-idle-delay 0.5
+  "The duration to wait for idle input before running tests.")
 
 (define-minor-mode ert-background-mode
   "Displays the current status of ERT tests in the modeline."
@@ -44,7 +47,7 @@
   (cond
    (ert-background-mode
     ;; Start idle timer.
-    (setq ebg--timer (run-with-idle-timer 1 t 'ebg--run-tests)))
+    (setq ebg--timer (run-with-idle-timer ebg-idle-delay t 'ebg--run-tests)))
 
    (t
     ;; Cancel idle timer.
