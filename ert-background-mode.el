@@ -28,65 +28,20 @@
 
 (require 'ert)
 
-(defvar ebg--timer nil
-  "Idle timer used to run tests.")
+;;; Customization
 
-(defvar ebg--lighter " [ERT …]"
-  "The default lighter to use for this mode.")
+(defgroup ert-background-mode nil
+  "Runs ert tests while you edit and displays the results in the modeline."
+  :prefix "ebg-"
+  :group 'tools)
 
-(defvar-local ebg--current-lighter ebg--lighter
-  "The current state of the lighter.")
-
-(defvar ebg-idle-delay 2
-  "The duration to wait for idle input before running tests.")
-
-(define-minor-mode ert-background-mode
-  "Displays the current status of ERT tests in the modeline."
-  nil ebg--current-lighter nil
-  ;; We do a test run when nelwines are inserted.
-  (cond
-   (ert-background-mode
-    ;; Start idle timer.
-    (setq ebg--timer (run-with-idle-timer ebg-idle-delay t 'ebg--run-tests)))
-
-   (t
-    ;; Cancel idle timer.
-    (when ebg--timer
-      (cancel-timer ebg--timer))
-    (setq ebg--timer nil))))
+(defcustom ebg-idle-delay 1
+  "The duration to wait for idle input before running tests."
+  :group 'ert-background-mode
+  :type 'integer)
 
 ;;; ----------------------------------------------------------------------------
-
-(defun ebg--run-tests ()
-  "Run ERT in the background and update the modeline."
-  (when (and (boundp 'ert-background-mode)
-             ert-background-mode
-             (not (active-minibuffer-window))
-             (not cursor-in-echo-area)))
-  ;; Rebind `message' so that we do not see printed results.
-  (flet ((message (&rest _)))
-    (ebg--set-mode-line (ebg--summarize (ert-run-tests-batch t)))))
-
-(defun ebg--summarize (results)
-  "Select a circle corresponding to the type and number of RESULTS."
-  (let ((failing (ert--stats-failed-unexpected results)))
-    (cond
-     ;; No tests are enabled.
-     ((>= 0 (length (ert--stats-tests results))) "…")
-     ;; Indicate number of failing tests.
-     ((< 0 failing)
-      (propertize (format "%s FAILING" failing) 'face 'ebg-failing-face))
-     ;; Show OK for all passing.
-     (t
-      (propertize "OK" 'face 'ebg-passing-face)))))
-
-(defun ebg--set-mode-line (str)
-  "Update the modeline with status STR."
-  (let ((ml (concat " [ERT "str "]")))
-    (setq ebg--current-lighter ml)
-    (force-mode-line-update)))
-
-;;; ----------------------------------------------------------------------------
+;;; Faces
 
 (defface ebg-failing-face
   '((t :inherit error))
@@ -99,14 +54,59 @@
   :group 'ert-background-mode)
 
 (defface ebg-passing-face
-  '((((type tty) (class color))
-     (:background "green"))
-    (((type tty) (class mono))
-     (:inverse-video t))
-    (((type x w32 mac))
-     (:foreground "green")))
+  '((t (:foreground "green")))
   "Face for passing tests indicator."
   :group 'ert-background-mode)
+
+;;; ----------------------------------------------------------------------------
+;;; Mode functions
+
+(defvar ebg--timer nil
+  "Idle timer used to run tests.")
+
+(defvar ebg--status-text " [ert]"
+  "The string to use to represent the current status in the modeline.")
+
+(define-minor-mode ert-background-mode
+  "Displays the current status of ERT tests in the modeline."
+  :init-value nil
+  :lighter (:eval ebg--status-text)
+
+  (cond
+   (ert-background-mode
+    (ebg--run-timer)
+    (add-hook 'after-save-hook 'ebg--run-timer nil t))
+
+   (t
+    (remove-hook 'after-save-hook 'ebg--run-timer t)
+    ;; Cancel idle timer.
+    (when ebg--timer (cancel-timer ebg--timer))
+    (setq ebg--timer nil))))
+
+(defun ebg--run-timer (&rest _args)
+  "Configure idle timer."
+  (when ebg--timer (cancel-timer ebg--timer))
+  (setq ebg--timer (run-with-idle-timer ebg-idle-delay nil 'ebg--run-tests)))
+
+(defun ebg--run-tests (&rest _)
+  "Run ERT in the background and update the modeline."
+  ;; Rebind `message' so that we do not see printed results.
+  (flet ((message (&rest _)))
+    (setq ebg--status-text (ebg--summarize (ert-run-tests-batch t)))))
+
+(defun ebg--summarize (results)
+  "Select a circle corresponding to the type and number of RESULTS."
+  (let ((failing (ert--stats-failed-unexpected results)))
+    (cond
+     ;; No tests are enabled.
+     ((>= 0 (length (ert--stats-tests results)))
+      (propertize " [ert]" 'font-lock-face 'ebg-warning-face))
+     ;; Indicate number of failing tests.
+     ((< 0 failing)
+      (propertize (format " [%s]" failing) 'font-lock-face 'ebg-failing-face))
+     ;; Show OK for all passing.
+     (t
+      (propertize " [OK]" 'font-lock-face 'ebg-passing-face)))))
 
 (provide 'ert-background-mode)
 
