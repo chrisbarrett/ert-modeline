@@ -1,0 +1,6 @@
+*~
+*.elc
+.DS_Store
+\#*
+TAGS
+tmp
