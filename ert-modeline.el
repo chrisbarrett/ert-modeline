@@ -30,7 +30,7 @@
 
 ;;; Customization
 
-(defgroup ert-modeline-mode nil
+(defgroup ert-modeline nil
   "Runs ert tests while you edit and displays the results in the modeline."
   :prefix "ertml-"
   :group 'tools)
@@ -43,17 +43,17 @@
 (defface ertml-failing-face
   '((t :inherit error))
   "Face for error indicator."
-  :group 'ert-modeline-mode)
+  :group 'ert-modeline)
 
 (defface ertml-warning-face
   '((t :inherit warning))
   "Face for warning indicator."
-  :group 'ert-modeline-mode)
+  :group 'ert-modeline)
 
 (defface ertml-passing-face
   '((t (:foreground "green")))
   "Face for passing tests indicator."
-  :group 'ert-modeline-mode)
+  :group 'ert-modeline)
 
 ;;; ----------------------------------------------------------------------------
 ;;; Mode functions
