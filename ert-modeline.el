@@ -101,7 +101,6 @@
 ;;; Ensures that tests are re-run when the buffer is evaluated.
 
 (dolist (fn '(eval-buffer
-              eval-expression
               eval-defun
               eval-current-buffer
               eval-region)
