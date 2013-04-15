@@ -35,14 +35,6 @@
   :prefix "ebg-"
   :group 'tools)
 
-(defcustom ebg-idle-delay 1
-  "The duration to wait for idle input before running tests."
-  :group 'ert-background-mode
-  :type 'integer)
-
-;;; ----------------------------------------------------------------------------
-;;; Faces
-
 (defface ebg-failing-face
   '((t :inherit error))
   "Face for error indicator."
@@ -61,12 +53,10 @@
 ;;; ----------------------------------------------------------------------------
 ;;; Mode functions
 
-(defvar ebg--timer nil
-  "Idle timer used to run tests.")
-
 (defvar ebg--status-text " [ert]"
   "The string to use to represent the current status in the modeline.")
 
+;;;###autoload
 (define-minor-mode ert-background-mode
   "Displays the current status of ERT tests in the modeline."
   :init-value nil
@@ -74,19 +64,11 @@
 
   (cond
    (ert-background-mode
-    (ebg--run-timer)
-    (add-hook 'after-save-hook 'ebg--run-timer nil t))
+    (ebg--run-tests)
+    (add-hook 'after-save-hook 'ebg--run-tests nil t))
 
    (t
-    (remove-hook 'after-save-hook 'ebg--run-timer t)
-    ;; Cancel idle timer.
-    (when ebg--timer (cancel-timer ebg--timer))
-    (setq ebg--timer nil))))
-
-(defun ebg--run-timer (&rest _args)
-  "Configure idle timer."
-  (when ebg--timer (cancel-timer ebg--timer))
-  (setq ebg--timer (run-with-idle-timer ebg-idle-delay nil 'ebg--run-tests)))
+    (remove-hook 'after-save-hook 'ebg--run-tests t))))
 
 (defun ebg--run-tests (&rest _)
   "Run ERT in the background and update the modeline."
@@ -107,6 +89,21 @@
      ;; Show OK for all passing.
      (t
       (propertize " [OK]" 'font-lock-face 'ebg-passing-face)))))
+
+;;; ----------------------------------------------------------------------------
+;;; Eval advice
+;;;
+;;; Ensures that tests are re-run when the buffer is evaluated.
+
+(dolist (fn '(eval-buffer
+              eval-expression
+              eval-defun
+              eval-current-buffer
+              eval-region)
+            )
+  (eval `(defadvice ,fn (after ebg--run activate)
+           (when (and (boundp 'ert-background-mode) ert-background-mode)
+             (ebg--run-tests)))))
 
 (provide 'ert-background-mode)
 
