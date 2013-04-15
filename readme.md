@@ -6,9 +6,9 @@ Run ERT tests and show the results in the modeline.
 
 ## Description
 
-This is a minor mode that will run ERT tests whenever you save an elisp buffer
-or evaluate an expression. You will know immediately if you have introduced a
-breaking change.
+This is a minor mode that will run ERT tests in the background whenever you save
+an elisp buffer or evaluate an expression. The results are displayed in the
+modeline, so you will know immediately if you have introduced a breaking change.
 
 ## Installation
 
