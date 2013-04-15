@@ -1,6 +1,8 @@
 # ERT Modeline
 
-Show the status of currently loaded ERT tests in the mode-line.
+Run ERT tests and show the results in the modeline.
+
+![Example of modeline with ert-modeline-mode enabled](https://raw.github.com/chrisbarrett/ert-modeline/master/ert-modeline.png)
 
 ## Description
 
