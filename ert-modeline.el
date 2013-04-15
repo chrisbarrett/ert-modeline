@@ -1,4 +1,4 @@
-;;; ert-background-mode --- Background test runner for ERT.
+;;; ert-modeline-mode --- displays ert test results in the modeline.
 
 ;; Copyright (C) 2013 Chris Barrett
 
@@ -21,8 +21,8 @@
 
 ;;; Commentary:
 
-;; Background test runner for ERT. Displays the current test status in the
-;; modeline in elisp buffers.
+;; Runs ERT tests whenever you save an elisp buffer or eval an
+;; expression. Displays the results in the modeline.
 
 ;;; Code:
 
@@ -30,7 +30,7 @@
 
 ;;; Customization
 
-(defgroup ert-background-mode nil
+(defgroup ert-modeline-mode nil
   "Runs ert tests while you edit and displays the results in the modeline."
   :prefix "ebg-"
   :group 'tools)
@@ -38,17 +38,17 @@
 (defface ebg-failing-face
   '((t :inherit error))
   "Face for error indicator."
-  :group 'ert-background-mode)
+  :group 'ert-modeline-mode)
 
 (defface ebg-warning-face
   '((t :inherit warning))
   "Face for warning indicator."
-  :group 'ert-background-mode)
+  :group 'ert-modeline-mode)
 
 (defface ebg-passing-face
   '((t (:foreground "green")))
   "Face for passing tests indicator."
-  :group 'ert-background-mode)
+  :group 'ert-modeline-mode)
 
 ;;; ----------------------------------------------------------------------------
 ;;; Mode functions
@@ -57,13 +57,13 @@
   "The string to use to represent the current status in the modeline.")
 
 ;;;###autoload
-(define-minor-mode ert-background-mode
+(define-minor-mode ert-modeline-mode
   "Displays the current status of ERT tests in the modeline."
   :init-value nil
   :lighter (:eval ebg--status-text)
 
   (cond
-   (ert-background-mode
+   (ert-modeline-mode
     (ebg--run-tests)
     (add-hook 'after-save-hook 'ebg--run-tests nil t))
 
@@ -71,7 +71,7 @@
     (remove-hook 'after-save-hook 'ebg--run-tests t))))
 
 (defun ebg--run-tests (&rest _)
-  "Run ERT in the background and update the modeline."
+  "Run ERT in the modeline and update the modeline."
   ;; Rebind `message' so that we do not see printed results.
   (flet ((message (&rest _)))
     (setq ebg--status-text (ebg--summarize (ert-run-tests-batch t)))))
@@ -102,14 +102,14 @@
               eval-region)
             )
   (eval `(defadvice ,fn (after ebg--run activate)
-           (when (and (boundp 'ert-background-mode) ert-background-mode)
+           (when (and (boundp 'ert-modeline-mode) ert-modeline-mode)
              (ebg--run-tests)))))
 
-(provide 'ert-background-mode)
+(provide 'ert-modeline-mode)
 
 ;; Local Variables:
 ;; lexical-binding: t
 ;; byte-compile-warnings: (not obsolete)
 ;; End:
 
-;;; ert-background-mode.el ends here
+;;; ert-modeline-mode.el ends here
