@@ -85,9 +85,9 @@
   "Select a circle corresponding to the type and number of RESULTS."
   (let ((failing (ert--stats-failed-unexpected results)))
     (cond
-     ;; No tests are enabled.
+     ;; No tests are enabled - do not show lighter.
      ((>= 0 (length (ert--stats-tests results)))
-      (propertize " [ert]" 'font-lock-face 'ertml-warning-face))
+      "")
      ;; Indicate number of failing tests.
      ((< 0 failing)
       (propertize (format " [%s]" failing) 'font-lock-face 'ertml-failing-face))
