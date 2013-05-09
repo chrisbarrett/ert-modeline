@@ -1,8 +1,11 @@
-;;; ert-modeline --- displays ert test results in the modeline.
+;;; ert-modeline.el --- displays ert test results in the modeline.
 
 ;; Copyright (C) 2013 Chris Barrett
 
 ;; Author: Chris Barrett <chris.d.barrett@me.com>
+;; Version: 0.2.2
+;; Package-Requires: ((s "1.3.1")(dash "1.2.0")(emacs "24.1")(projectile "0.9.1"))
+;; Keywords: tools tests convenience
 
 ;; This file is not part of GNU Emacs.
 
@@ -27,6 +30,9 @@
 ;;; Code:
 
 (require 'ert)
+(require 'dash)
+(require 's)
+(autoload 'projectile-project-root "projectile")
 
 ;;; Customization
 
@@ -39,6 +45,11 @@
   "The selector to use for running ERT tests."
   :group 'ert-modeline
   :type 'symbol)
+
+(defcustom ertml-setup-commands '(ertml--load-project-tests)
+  "A list of functions that will be called when the mode is activated.
+The default action is to search for test files in the project."
+  :group 'ert-modeline)
 
 (defface ertml-failing-face
   '((t :inherit error))
@@ -56,9 +67,44 @@
   :group 'ert-modeline)
 
 ;;; ----------------------------------------------------------------------------
+
+(defun ertml--load-project-tests ()
+  "Load the ert test files in the current project,
+
+Tests should include the term \"test\" in the filename.
+
+If a test-runner is found, that will be loaded first.  A test
+runner is expected to be an elisp file that includes the term
+\"runner\" or \"fixture\" in the filename.
+
+These files may be located in the project root, or in folders
+called \"test\" or \"tests\"."
+  (interactive)
+  (-when-let (root (projectile-project-root))
+    (let* (
+           (files (->> (list root (concat root "test/") (concat root "tests/"))
+                    ;; Find all tests in possible test directories.
+                    (-filter 'file-exists-p)
+                    (--mapcat (directory-files it t (rx "test" (* nonl) ".el")))
+                    (-remove 'null)
+                    (-filter 'file-exists-p)
+                    ;; Find test runners.
+                    (--group-by (s-matches? (rx (or "runner" "fixture")) it))))
+           (runners (assoc t files))
+           (tests   (assoc nil files))
+           )
+      (--each (cdr runners) (load it t))
+      (--each (cdr tests)   (load it t))
+      (when (or runners tests)
+        (message "Loaded %s test files"
+                 (+ (length (cdr runners))
+                    (length (cdr tests))))))))
+
+;;; ----------------------------------------------------------------------------
 ;;; Mode functions
 
-(defvar ertml--status-text " [ert]"
+
+(defvar ertml--status-text ""
   "The string to use to represent the current status in the modeline.")
 
 ;;;###autoload
@@ -69,6 +115,10 @@
 
   (cond
    (ert-modeline-mode
+
+    ;; By default, load tests in the project, but also run any custom functions.
+    (mapc 'funcall ertml-setup-commands)
+
     (ertml--run-tests)
     (add-hook 'after-save-hook 'ertml--run-tests nil t))
 
@@ -76,7 +126,7 @@
     (remove-hook 'after-save-hook 'ertml--run-tests t))))
 
 (defun ertml--run-tests (&rest _)
-  "Run ERT in the modeline and update the modeline."
+  "Run ERT and update the modeline."
   ;; Rebind `message' so that we do not see printed results.
   (flet ((message (&rest _)))
     (setq ertml--status-text (ertml--summarize (ert-run-tests-batch ertml-selector)))))
