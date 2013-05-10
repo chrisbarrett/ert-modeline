@@ -33,6 +33,7 @@
 (require 'dash)
 (require 's)
 (autoload 'projectile-project-root "projectile")
+(autoload 'projectile-project-p "projectile")
 
 ;;; Customization
 
@@ -80,7 +81,8 @@ runner is expected to be an elisp file that includes the term
 These files may be located in the project root, or in folders
 called \"test\" or \"tests\"."
   (interactive)
-  (-when-let (root (projectile-project-root))
+  (-when-let (root (and (projectile-project-p)
+                        (projectile-project-root)))
     (let* (
            (files (->> (list root (concat root "test/") (concat root "tests/"))
                     ;; Find all tests in possible test directories.
@@ -116,8 +118,10 @@ called \"test\" or \"tests\"."
   (cond
    (ert-modeline-mode
 
-    ;; By default, load tests in the project, but also run any custom functions.
-    (mapc 'funcall ertml-setup-commands)
+    ;; Run setup commands. The default action is to load tests in the project.
+    (--each ertml-setup-commands
+      (ignore-errors
+        (funcall it)))
 
     (ertml--run-tests)
     (add-hook 'after-save-hook 'ertml--run-tests nil t))
