@@ -70,7 +70,7 @@ The default action is to search for test files in the project."
 ;;; ----------------------------------------------------------------------------
 
 (defun ertml--load-project-tests ()
-  "Load the ert test files in the current project,
+  "Load the ert test files in the current project.
 
 Tests should include the term \"test\" in the filename.
 
@@ -95,8 +95,15 @@ called \"test\" or \"tests\"."
            (runners (assoc t files))
            (tests   (assoc nil files))
            )
-      (--each (cdr runners) (load it t))
-      (--each (cdr tests)   (load it t))
+      (--each (cdr runners)
+        ;; Do not execute tests when loading test runners.
+        (flet ((ert-run-tests-batch-and-exit (&rest _))
+               (ert-run-tests-batch (&rest _)))
+          (load it t)))
+
+      (--each (cdr tests)
+        (load it t))
+
       (when (or runners tests)
         (message "Loaded %s test files"
                  (+ (length (cdr runners))
