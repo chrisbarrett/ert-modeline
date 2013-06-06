@@ -3,7 +3,7 @@
 ;; Copyright (C) 2013 Chris Barrett
 
 ;; Author: Chris Barrett <chris.d.barrett@me.com>
-;; Version: 0.2.2
+;; Version: 0.2.3
 ;; Package-Requires: ((s "1.3.1")(dash "1.2.0")(emacs "24.1")(projectile "0.9.1"))
 ;; Keywords: tools tests convenience
 
@@ -32,7 +32,6 @@
 (require 'ert)
 (require 'dash)
 (require 's)
-(autoload 'projectile-project-root "projectile")
 (autoload 'projectile-project-p "projectile")
 
 ;;; Customization
@@ -81,8 +80,7 @@ runner is expected to be an elisp file that includes the term
 These files may be located in the project root, or in folders
 called \"test\" or \"tests\"."
   (interactive)
-  (-when-let (root (and (projectile-project-p)
-                        (projectile-project-root)))
+  (-when-let (root (projectile-project-p))
     (let* (
            (files (->> (list root (concat root "test/") (concat root "tests/"))
                     ;; Find all tests in possible test directories.
@@ -99,10 +97,10 @@ called \"test\" or \"tests\"."
         ;; Do not execute tests when loading test runners.
         (flet ((ert-run-tests-batch-and-exit (&rest _))
                (ert-run-tests-batch (&rest _)))
-          (load it t)))
+          (load it)))
 
       (--each (cdr tests)
-        (load it t))
+        (load it))
 
       (when (or runners tests)
         (message "Loaded %s test files"
@@ -127,8 +125,7 @@ called \"test\" or \"tests\"."
 
     ;; Run setup commands. The default action is to load tests in the project.
     (--each ertml-setup-commands
-      (ignore-errors
-        (funcall it)))
+      (funcall it))
 
     (ertml--run-tests)
     (add-hook 'after-save-hook 'ertml--run-tests nil t))
@@ -140,7 +137,8 @@ called \"test\" or \"tests\"."
   "Run ERT and update the modeline."
   ;; Rebind `message' so that we do not see printed results.
   (flet ((message (&rest _)))
-    (setq ertml--status-text (ertml--summarize (ert-run-tests-batch ertml-selector)))))
+    (-when-let (result (ert-run-tests-batch ertml-selector))
+      (setq ertml--status-text (ertml--summarize result)))))
 
 (defun ertml--summarize (results)
   "Select a circle corresponding to the type and number of RESULTS."
