@@ -62,7 +62,7 @@ The default action is to search for test files in the project."
   :group 'ert-modeline)
 
 (defface ertml-passing-face
-  '((t (:foreground "green")))
+  '((t (:inherit success)))
   "Face for passing tests indicator."
   :group 'ert-modeline)
 
