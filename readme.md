@@ -1,5 +1,8 @@
 # ERT Modeline
 
+[![MELPA](http://melpa.org/packages/ert-modeline-badge.svg)](http://melpa.org/#/ert-modeline)
+[![MELPA Stable](http://stable.melpa.org/packages/ert-modeline-badge.svg)](http://stable.melpa.org/#/ert-modeline)
+
 Run ERT tests and show the results in the modeline.
 
 ![Example of modeline with ert-modeline-mode enabled](https://raw.github.com/chrisbarrett/ert-modeline/master/ert-modeline.png)
